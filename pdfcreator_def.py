@@ -13,12 +13,21 @@ import glob
 import time
 
 def del_pdf_in_folder(i_path_pdf):
+    """
+    функция очистки папки от использованых pdf
+    :param i_path_pdf: str путь до папки в котрой лежaт pdf
+    :return:
+    """
     file_queue = [f for f in glob.glob(i_path_pdf + "*.pdf") if isfile(f)]
     if len(file_queue) > 0:
         for i in file_queue:
             osrem(i)
 
 def sendtoprinter():
+    """
+    функция отправки на печать pdf файлов из папки
+    :return:
+    """
     old_printer = win32print.GetDefaultPrinter()
     new_printer = win32print.SetDefaultPrinter('Honeywell PC42t plus (203 dpi)')
     # file_queue = [f for f in glob.glob("%s\\*.pdf" % source_path) if isfile(f)]
