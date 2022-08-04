@@ -140,24 +140,24 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image name of vendor code
     # image sale
     sale = price_tag_dict.get('sale', 0)
-    price_font_size = 15
-    ytext = ytext - price_font_size * 3 - 3 * mm
+    price_font_size = 16
+    ytext = ytext - price_font_size * 3 + 3 * mm
     if sale == '':
         sale = '0.00'
     if float(sale) != 0:
         c.setFont('Arial', price_font_size)
         # ytext = ytext - price_font_size * 3
-        xs = pole + 2 * mm
+        xs = pole - 2 * mm
         text_on_page(c, vtext=sale + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                      xfinish=c_width, cross_out=cross_out)
     # image sale
     # image price
     vtext_price = price_tag_dict.get('price', None)
     if float(sale) != 0:
-        price_font_size = 10
+        # price_font_size = 20
         cross_out = True
     c.setFont('Arial', price_font_size)
-    xs = 33 * mm
+    xs = 29 * mm
     text_on_page(c, vtext=vtext_price + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                  xfinish=c_width, cross_out=cross_out)
     # image price
@@ -179,6 +179,22 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
 
 widthPage = 6 * cm
 heightPage = 4 * cm
+
+
+def main():
+    i_path = 'd:\\files\\'
+    del_pdf_in_folder(i_path)
+    with open('d:\\files\\qr.json') as json_file:
+        data = json.load(json_file)
+        for pt in data['price_tag']:
+            pdf_canvas = canvas.Canvas('d:\\files\\' + pt['qr'] + ".pdf", pagesize=(widthPage, heightPage))
+            # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
+            #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
+            make_pdf_page(pdf_canvas, pt)
+
+    sendtoprinter()
+
+
 # 170.0787401574803
 # 113.38582677165354
 # price_tag = [
@@ -195,20 +211,5 @@ heightPage = 4 * cm
 #     'shop': 'ЕКБ Академический'
 #     }
 # ]
-# for pt in price_tag:
-#     pdf_canvas = canvas.Canvas(pt.get('qr') + ".pdf", pagesize=(widthPage, heightPage))
-#     make_pdf_page(pdf_canvas, qr_data=pt.get('qr'), vtext=pt.get('name'),
-#                     vtext_price=pt.get('price'), shop=pt.get('shop'))
 
-
-i_path = 'd:\\files\\'
-del_pdf_in_folder(i_path)
-with open('d:\\files\\qr.json') as json_file:
-    data = json.load(json_file)
-    for pt in data['price_tag']:
-        pdf_canvas = canvas.Canvas('d:\\files\\' + pt['qr'] + ".pdf", pagesize=(widthPage, heightPage))
-        # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
-        #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
-        make_pdf_page(pdf_canvas, pt)
-
-# sendtoprinter()
+main()
