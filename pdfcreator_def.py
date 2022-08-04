@@ -11,6 +11,7 @@ from os.path import isfile
 from os import remove as osrem
 import glob
 import time
+from sys import exit
 
 
 def del_pdf_in_folder(i_path_pdf):
@@ -37,13 +38,14 @@ def sendtoprinter():
     if len(file_queue) > 0:
         for i in file_queue:
             if i.find('99999999999999999999999999999999') == -1:
-                print_file(i, new_printer)
+                error_level = print_file(i, new_printer)
                 print(i)
     time.sleep(5)
     # if len(file_queue) > 0:
     #     for i in file_queue:
     #         osrem(i)
     win32print.SetDefaultPrinter(old_printer)
+    return error_level
 
 
 def print_file(pfile, printer):
@@ -54,7 +56,7 @@ def print_file(pfile, printer):
     :param printer: str имя принтера как в винде
     :return:
     """
-    win32api.ShellExecute(
+    error_level = win32api.ShellExecute(
         0,
         "print",
         '%s' % pfile,
@@ -62,6 +64,8 @@ def print_file(pfile, printer):
         ".",
         0
     )
+    return error_level
+
 
 
 def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
@@ -141,7 +145,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image sale
     sale = price_tag_dict.get('sale', 0)
     price_font_size = 16
-    ytext = ytext - price_font_size * 3 + 3 * mm
+    ytext = ytext - price_font_size * 3 + 1 * mm
     if sale == '':
         sale = '0.00'
     if float(sale) != 0:
@@ -192,7 +196,7 @@ def main():
             #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
             make_pdf_page(pdf_canvas, pt)
 
-    sendtoprinter()
+    return sendtoprinter()
 
 
 # 170.0787401574803
@@ -212,4 +216,5 @@ def main():
 #     }
 # ]
 
-main()
+error = main()
+exit(error)
