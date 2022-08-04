@@ -65,7 +65,7 @@ def print_file(pfile, printer):
 
 
 def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
-                 xfinish: int = 170):
+                 xfinish: int = 170, cross_out:bool = False):
     """
     функция размещения текста на нашем объекте pdf
     :param canvs: obj сам объект pdf
@@ -79,6 +79,7 @@ def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: 
     :return: int финишная координата Y, на какой высоте остановились
     """
     from reportlab.pdfbase.pdfmetrics import stringWidth
+
     # xstart, ystart start coordinates our text string
     vtext_result = ''
     for char in vtext:
@@ -87,6 +88,9 @@ def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: 
             vtext_result = vtext_result + char
         else:
             canvs.drawString(xstart, ystart, vtext_result)
+            if cross_out is True:
+                cross_out_y = ystart + vtext_font_size // 3
+                canvs.line(xstart, cross_out_y, xstart + stringWidth(vtext_result, 'Arial', vtext_font_size), cross_out_y)
             if char != " ":
                 vtext_result = char
             else:
@@ -94,11 +98,15 @@ def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: 
             ystart = ystart - vtext_font_size
     else:
         canvs.drawString(xstart, ystart, vtext_result)
+        if cross_out is True:
+            cross_out_y = ystart + vtext_font_size // 3
+            canvs.line(xstart, cross_out_y, xstart + stringWidth(vtext_result, 'Arial', vtext_font_size), cross_out_y)
     return ystart
 
 
-def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_price: str = '000000',
-                  shop: str = 'not shop'):
+# def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_price: str = '000000',
+#                   shop: str = 'not shop', sale='00000'):
+def make_pdf_page(c, price_tag_dict: dict = {}):
     """
     функция создания объекта pdf страницы
     :param c: объект pdf
@@ -106,8 +114,10 @@ def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_pri
     :param vtext: str строка с текстом на ценнике
     :param vtext_price: str строка с ценой
     :param shop: str строка с названием магазина
+    cross_out: bool флаг зачернутый текст будет или нет
     :return: file
     """
+    cross_out = False
     pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
     pdfmetrics.registerFont(TTFont('ArialBold', 'arialbd.ttf'))
     c_width = c.__dict__['_pagesize'][0]
@@ -117,28 +127,48 @@ def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_pri
     qr_width = qr_height = c_width // 3
     pole = 4 * mm
     # image qr-code
+    qr_data = price_tag_dict.get('qr', None)
     c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width,
                       height=qr_height)
     c.rect(c_width - qr_width - pole, c_height - qr_height, qr_width, qr_height, fill=0)
     # image qr-code
     ytext = c_height - vtext_font_size * 1.5
     # image name of vendor code
+    vtext = price_tag_dict.get('name', None)
     ytext = text_on_page(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=vtext_font_size, ystart=ytext,
-                         xfinish=c_width - (qr_width + 20 + pole))
+                         xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # image name of vendor code
-    price_font_size = 12
-    c.setFont('Arial', price_font_size)
-    ytext = ytext - price_font_size * 3
-    xs = 20 * mm
+    # image sale
+    sale = price_tag_dict.get('sale', 0)
+    price_font_size = 15
+    ytext = ytext - price_font_size * 3 - 3 * mm
+    if sale == '':
+        sale = '0.00'
+    if float(sale) != 0:
+        c.setFont('Arial', price_font_size)
+        # ytext = ytext - price_font_size * 3
+        xs = pole + 2 * mm
+        text_on_page(c, vtext=sale + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
+                     xfinish=c_width, cross_out=cross_out)
+    # image sale
     # image price
+    vtext_price = price_tag_dict.get('price', None)
+    if float(sale) != 0:
+        price_font_size = 10
+        cross_out = True
+    c.setFont('Arial', price_font_size)
+    xs = 33 * mm
     text_on_page(c, vtext=vtext_price + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
-                 xfinish=c_width - qr_width)
-    vtext_shop = 'Цена за 1 шт усл. ' + shop
-    shop_font_size = 6
-    c.setFont('ArialBold', shop_font_size)
+                 xfinish=c_width, cross_out=cross_out)
+    # image price
     # image name of shop
-    text_on_page(c, vtext=vtext_shop, vtext_font_size=shop_font_size, xstart=shop_font_size, ystart=shop_font_size * 2,
-                 xfinish=c_width - (qr_width + 20))
+    # shop больше не печатаем
+    # vtext_shop = 'Цена за 1 шт усл. ' + shop
+    # shop_font_size = 6
+    # c.setFont('ArialBold', shop_font_size)
+    # # image name of shop
+    # text_on_page(c, vtext=vtext_shop, vtext_font_size=shop_font_size, xstart=shop_font_size, ystart=shop_font_size * 2,
+    #              xfinish=c_width - (qr_width + 20))
     # текст qr кода
     qr_font_size = 6
     c.setFont('Arial', qr_font_size)
@@ -177,7 +207,8 @@ with open('d:\\files\\qr.json') as json_file:
     data = json.load(json_file)
     for pt in data['price_tag']:
         pdf_canvas = canvas.Canvas('d:\\files\\' + pt['qr'] + ".pdf", pagesize=(widthPage, heightPage))
-        make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
-                      vtext_price=pt['price'], shop=pt['shop'])
+        # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
+        #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
+        make_pdf_page(pdf_canvas, pt)
 
 # sendtoprinter()
