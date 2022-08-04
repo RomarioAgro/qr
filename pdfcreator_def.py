@@ -12,6 +12,7 @@ from os import remove as osrem
 import glob
 import time
 
+
 def del_pdf_in_folder(i_path_pdf):
     """
     функция очистки папки от использованых pdf
@@ -22,6 +23,7 @@ def del_pdf_in_folder(i_path_pdf):
     if len(file_queue) > 0:
         for i in file_queue:
             osrem(i)
+
 
 def sendtoprinter():
     """
@@ -34,15 +36,24 @@ def sendtoprinter():
     file_queue = [f for f in glob.glob("d:\\files\\*.pdf") if isfile(f)]
     if len(file_queue) > 0:
         for i in file_queue:
-            print_file(i, new_printer)
-            print(i)
+            if i.find('99999999999999999999999999999999') == -1:
+                print_file(i, new_printer)
+                print(i)
     time.sleep(5)
-    if len(file_queue) > 0:
-        for i in file_queue:
-            osrem(i)
+    # if len(file_queue) > 0:
+    #     for i in file_queue:
+    #         osrem(i)
     win32print.SetDefaultPrinter(old_printer)
 
+
 def print_file(pfile, printer):
+    """
+    функция отправки на принтер конкретного файла,
+    используем винапи
+    :param pfile: str полное имя файла
+    :param printer: str имя принтера как в винде
+    :return:
+    """
     win32api.ShellExecute(
         0,
         "print",
@@ -50,14 +61,25 @@ def print_file(pfile, printer):
         '/d:"%s"' % printer,
         ".",
         0
-        )
+    )
 
 
-
-
-def text_on_page(canvs, vtext='Test', vtext_font_size=10, xstart=0, ystart=0, xfinish=170):
+def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
+                 xfinish: int = 170):
+    """
+    функция размещения текста на нашем объекте pdf
+    :param canvs: obj сам объект pdf
+    :param vtext: str текст который будем размещать
+    если текст не входит в одну строку, то будем делать переносы,
+    поэтому по выходу надо знать на какой высоте объект уже занят
+    :param vtext_font_size: int размер шрифта
+    :param xstart: int стартовая координата X
+    :param ystart: int стартовая координата Y
+    :param xfinish: int финишная координата X
+    :return: int финишная координата Y, на какой высоте остановились
+    """
     from reportlab.pdfbase.pdfmetrics import stringWidth
-# xstart, ystart start coordinates our text string
+    # xstart, ystart start coordinates our text string
     vtext_result = ''
     for char in vtext:
         x_text_print = xstart + stringWidth(vtext_result, 'Arial', vtext_font_size)
@@ -74,7 +96,18 @@ def text_on_page(canvs, vtext='Test', vtext_font_size=10, xstart=0, ystart=0, xf
         canvs.drawString(xstart, ystart, vtext_result)
     return ystart
 
-def make_pdf_page(c, qr_data='99999', vtext='zaglushka',vtext_price='000000',shop ='not shop'):
+
+def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_price: str = '000000',
+                  shop: str = 'not shop'):
+    """
+    функция создания объекта pdf страницы
+    :param c: объект pdf
+    :param qr_data: str строка c QR кодом
+    :param vtext: str строка с текстом на ценнике
+    :param vtext_price: str строка с ценой
+    :param shop: str строка с названием магазина
+    :return: file
+    """
     pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
     pdfmetrics.registerFont(TTFont('ArialBold', 'arialbd.ttf'))
     c_width = c.__dict__['_pagesize'][0]
@@ -82,30 +115,36 @@ def make_pdf_page(c, qr_data='99999', vtext='zaglushka',vtext_price='000000',sho
     vtext_font_size = 10
     c.setFont('Arial', vtext_font_size)
     qr_width = qr_height = c_width // 3
-    pole = 4*mm
+    pole = 4 * mm
     # image qr-code
-    c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width, height=qr_height)
+    c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width,
+                      height=qr_height)
     c.rect(c_width - qr_width - pole, c_height - qr_height, qr_width, qr_height, fill=0)
     # image qr-code
     ytext = c_height - vtext_font_size * 1.5
     # image name of vendor code
-    ytext = text_on_page(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=vtext_font_size, ystart=ytext, xfinish=c_width - (qr_width+20 + pole))
+    ytext = text_on_page(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=vtext_font_size, ystart=ytext,
+                         xfinish=c_width - (qr_width + 20 + pole))
     # image name of vendor code
-    price_font_size = 17
+    price_font_size = 12
     c.setFont('Arial', price_font_size)
-    ytext = ytext - price_font_size * 2
+    ytext = ytext - price_font_size * 3
+    xs = 20 * mm
     # image price
-    text_on_page(c, vtext=vtext_price+'р.', vtext_font_size=price_font_size, xstart=vtext_font_size, ystart=ytext, xfinish=c_width - (qr_width+20))
+    text_on_page(c, vtext=vtext_price + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
+                 xfinish=c_width - qr_width)
     vtext_shop = 'Цена за 1 шт усл. ' + shop
     shop_font_size = 6
     c.setFont('ArialBold', shop_font_size)
     # image name of shop
-    text_on_page(c, vtext=vtext_shop, vtext_font_size=shop_font_size, xstart=shop_font_size, ystart=shop_font_size*2, xfinish=c_width - (qr_width+20))
-    qr_font_size = 8
+    text_on_page(c, vtext=vtext_shop, vtext_font_size=shop_font_size, xstart=shop_font_size, ystart=shop_font_size * 2,
+                 xfinish=c_width - (qr_width + 20))
+    # текст qr кода
+    qr_font_size = 6
     c.setFont('Arial', qr_font_size)
-    text_on_page(c, vtext=qr_data, vtext_font_size=qr_font_size, xstart=c_width-qr_width-pole, ystart=qr_height-10, xfinish=c_width - pole)
+    text_on_page(c, vtext=qr_data, vtext_font_size=qr_font_size, xstart=c_width - qr_width - pole,
+                 ystart=qr_height - qr_font_size, xfinish=c_width - pole)
     c.save()
-
 
 
 widthPage = 6 * cm
@@ -139,6 +178,6 @@ with open('d:\\files\\qr.json') as json_file:
     for pt in data['price_tag']:
         pdf_canvas = canvas.Canvas('d:\\files\\' + pt['qr'] + ".pdf", pagesize=(widthPage, heightPage))
         make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
-                        vtext_price=pt['price'], shop=pt['shop'])
+                      vtext_price=pt['price'], shop=pt['shop'])
 
-sendtoprinter()
+# sendtoprinter()
