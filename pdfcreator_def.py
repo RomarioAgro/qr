@@ -40,7 +40,7 @@ def sendtoprinter():
             if i.find('99999999999999999999999999999999') == -1:
                 error_level = print_file(i, new_printer)
                 print(i)
-    time.sleep(5)
+    time.sleep(15)
     # if len(file_queue) > 0:
     #     for i in file_queue:
     #         osrem(i)
