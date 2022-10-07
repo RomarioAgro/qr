@@ -12,6 +12,7 @@ from os import remove as osrem
 import glob
 import time
 from sys import exit
+import uuid
 
 
 def del_pdf_in_folder(i_path_pdf):
@@ -68,7 +69,7 @@ def print_file(pfile, printer):
 
 
 
-def text_on_page(canvs, vtext: str = 'Test', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
+def text_on_page(canvs, vtext: str = '', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
                  xfinish: int = 170, cross_out:bool = False):
     """
     функция размещения текста на нашем объекте pdf
@@ -131,9 +132,10 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     qr_width = qr_height = c_width // 3
     pole = 4 * mm
     # image qr-code
-    qr_data = price_tag_dict.get('qr', None)
-    c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width,
-                      height=qr_height)
+    qr_data = price_tag_dict.get('qr', '')
+    if qr_data != '':
+        c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width,
+                          height=qr_height)
     c.rect(c_width - qr_width - pole, c_height - qr_height, qr_width, qr_height, fill=0)
     # image qr-code
     ytext = c_height - vtext_font_size * 1.5
@@ -191,7 +193,10 @@ def main():
     with open('d:\\files\\qr.json') as json_file:
         data = json.load(json_file)
         for pt in data['price_tag']:
-            pdf_canvas = canvas.Canvas('d:\\files\\' + pt['qr'] + ".pdf", pagesize=(widthPage, heightPage))
+            f_name_pdf = pt.get('qr', '')
+            if f_name_pdf == '':
+                f_name_pdf = str(uuid.uuid4()).replace('-', '')
+            pdf_canvas = canvas.Canvas('d:\\files\\' + f_name_pdf + ".pdf", pagesize=(widthPage, heightPage))
             # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
             #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
             make_pdf_page(pdf_canvas, pt)
