@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
+import os
+
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -27,7 +29,7 @@ def del_pdf_in_folder(i_path_pdf):
             osrem(i)
 
 
-def sendtoprinter():
+def sendtoprinter(work_dir:str = ''):
     """
     функция отправки на печать pdf файлов из папки
     :return:
@@ -35,13 +37,13 @@ def sendtoprinter():
     old_printer = win32print.GetDefaultPrinter()
     new_printer = win32print.SetDefaultPrinter('Honeywell PC42t plus (203 dpi)')
     # file_queue = [f for f in glob.glob("%s\\*.pdf" % source_path) if isfile(f)]
-    file_queue = [f for f in glob.glob("d:\\files\\*.pdf") if isfile(f)]
+    file_queue = [f for f in glob.glob(work_dir + "*.pdf") if isfile(f)]
     if len(file_queue) > 0:
         for i in file_queue:
             if i.find('99999999999999999999999999999999') == -1:
                 error_level = print_file(i, new_printer)
                 print(i)
-    time.sleep(15)
+    time.sleep(5)
     # if len(file_queue) > 0:
     #     for i in file_queue:
     #         osrem(i)
@@ -147,7 +149,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image sale
     sale = price_tag_dict.get('sale', 0)
     price_font_size = 16
-    ytext = ytext - price_font_size * 3 + 1 * mm
+    ytext = ytext - price_font_size * 3 - 2 * mm
     if sale == '':
         sale = '0.00'
     if float(sale) != 0:
@@ -188,7 +190,9 @@ heightPage = 4 * cm
 
 
 def main():
-    i_path = 'd:\\files\\'
+    i_path = 'd:\\files\\qr\\'
+    if os.path.exists(i_path) is False:
+        os.makedirs(i_path)
     del_pdf_in_folder(i_path)
     with open('d:\\files\\qr.json') as json_file:
         data = json.load(json_file)
@@ -196,12 +200,12 @@ def main():
             f_name_pdf = pt.get('qr', '')
             if f_name_pdf == '':
                 f_name_pdf = str(uuid.uuid4()).replace('-', '')
-            pdf_canvas = canvas.Canvas('d:\\files\\' + f_name_pdf + ".pdf", pagesize=(widthPage, heightPage))
+            pdf_canvas = canvas.Canvas(i_path + f_name_pdf + ".pdf", pagesize=(widthPage, heightPage))
             # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
             #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
             make_pdf_page(pdf_canvas, pt)
 
-    return sendtoprinter()
+    return sendtoprinter(work_dir=i_path)
 
 
 # 170.0787401574803
