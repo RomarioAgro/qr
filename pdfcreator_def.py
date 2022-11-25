@@ -147,11 +147,9 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
                          xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # image name of vendor code
     # image sale
-    sale = price_tag_dict.get('sale', 0)
+    sale = price_tag_dict.get('sale', '0')
     price_font_size = 16
-    ytext = ytext - price_font_size * 4 - 2 * mm
-    if sale == '':
-        sale = '0.00'
+    ytext = 4 * mm
     if float(sale) != 0:
         c.setFont('Arial', price_font_size)
         # ytext = ytext - price_font_size * 3
@@ -193,7 +191,7 @@ def main():
     i_path = 'd:\\files\\qr\\'
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
-    # del_pdf_in_folder(i_path)
+    del_pdf_in_folder(i_path)
     with open('d:\\files\\qr.json') as json_file:
         data = json.load(json_file)
         for pt in data['price_tag']:
