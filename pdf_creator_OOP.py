@@ -9,13 +9,17 @@ import io
 from from_sql import Sql
 import qrcode
 from json_read import ReadJSON
-from sys import argv
+from sys import argv, exit
 import os
 import win32print
 import win32api
 import time
 import random
+from pdfcreator_def import make_pdf_page as purchase_pdf
+from pdfcreator_def import sendtoprinter as purchase_print
 import logging
+import datetime
+import time
 import json
 
 
@@ -23,22 +27,34 @@ import json
 widthPage = 57 * mm
 heightPage = 40 * mm
 
+current_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H_%M_%S')
+logging.basicConfig(
+    filename=argv[1] + '\\' + argv[2] + "_" + current_time + '_.log',
+    filemode='a',
+    level=logging.DEBUG,
+    format="%(asctime)s - %(filename)s - %(funcName)s: %(lineno)d - %(message)s",
+    datefmt='%H:%M:%S')
 
-class PriceTag:
-    """
-    класс одного ценника, одной страницы
-    """
-    def __init__(self, pt: dict = {}):
-        self.pt = pt
+logging.debug('start')
 
 
-def sendtoprinter(i_file: str = ''):
+def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (203 dpi)', paper_width: int = 600, paper_height: int = 400):
     """
     функция отправки на печать pdf файлов из папки
     :return:
     """
+    # printer_name = 'Honeywell PC42t plus (203 dpi)'
     old_printer = win32print.GetDefaultPrinter()
-    new_printer = win32print.SetDefaultPrinter('Honeywell PC42t plus (203 dpi)')
+    new_printer = win32print.SetDefaultPrinter(printer_name)
+    PRINTER_DEFAULTS = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
+    printer_handle = win32print.OpenPrinter(printer_name, PRINTER_DEFAULTS)
+    default_printer_properties = win32print.GetPrinter(printer_handle, 2)
+    # Устанавливаем размер страницы
+    default_printer_properties['pDevMode'].PaperWidth = paper_width  # Ширина страницы 60 мм
+    default_printer_properties['pDevMode'].PaperLength = paper_height  # Высота страницы 40 мм
+    # Применяем настройки принтера
+    win32print.SetPrinter(printer_handle, 2, default_printer_properties, 0)
+
     error_level = print_file(i_file, new_printer)
     time.sleep(5)
     win32print.SetDefaultPrinter(old_printer)
@@ -259,12 +275,15 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image adres_shp
     # image care
     try:
+        logging.debug('собираемся получать изображение из байт'.format())
         care = Image.open(io.BytesIO(price_tag_dict.get('care', None)))
     except Exception as exc:
         care = None
+        logging.debug('получить изображение нихуя не вышло')
         print(exc)
     # care = Image.open('1.bmp')
     if care:
+        logging.debug('зашли в обработку изображения')
         hcare = vtext_font_size * 1.5
         ycare = ytext - hcare - pole
         # ковертируем картинку в градации серого
@@ -280,6 +299,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image make date
     vtext = price_tag_dict.get('make_date', None)
     if vtext:
+        logging.debug('зашли в печать даты изготовления'.format())
         vtext_font_size = c_height // 20
         ytext = ycare - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
@@ -289,14 +309,23 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # image GOST
     vtext = price_tag_dict.get('gost', None)
     if vtext:
+        logging.debug('зашли в печать ГОСТ'.format())
         vtext_font_size = c_height // 15
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
         ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image GOST
-    eac = Image.open('eac.png')
+    try:
+        path_eac = os.path.dirname(os.path.abspath(__file__))
+        logging.debug('путь до ЕАС {0}'.format(path_eac))
+        eac = Image.open(path_eac + '\\' + 'eac.png')
+    except Exception as exc:
+        logging.debug(exc)
+        logging.debug('не смогли прочитать картинку ЕАС')
+    logging.debug('прочитали картинку еас')
     if eac:
+        logging.debug('зашли в печать EAC'.format())
         weac = heac = c_height // 4.5
         c.drawInlineImage(eac, 0, 0, width=weac, height=heac)
     # image sort
@@ -361,28 +390,45 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
 
 
 def main():
+    print('hello')
     all_pt = ReadJSON(argv[1], argv[2])
+    logging.debug('прочитали весь json {0}'.format(all_pt))
     i_path = argv[1] + '\\qr\\'
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
     f_name = str(random.randint(1, 99999))
     pdf_path = argv[1] + '\\qr\\' + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
-    data_from_dbfsv = Sql('ACE', server='DBFSV\DBF2008')
-
+    logging.debug('создали объект pdf {0}'.format(pdf_canvas))
+    # объект для запроса в sql
+    db_name = config('database', None)
+    db_server = config('ACE_server', None)
+    data_from_dbfsv = Sql(db_name, server=db_server)
+    logging.debug('создали объект sql {0}'.format(data_from_dbfsv))
+    # получаем кортеж из наших ШК
+    shk_tuple = tuple(d.get('nomnomer', '9999999999999') for d in all_pt.data['price_tag'])
+    logging.debug('получили наш кортеж ШК={0}'.format(shk_tuple))
+    # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
+    print('стучимся в sql')
+    inf_shk = data_from_dbfsv.manual(shk_tuple)
     for price_tag in all_pt.data['price_tag']:
-        i_pt = PriceTag(price_tag)
-        # стучимся в SQL сервер
-        inf_shk = data_from_dbfsv.manual(price_tag['nomnomer'])
-        i_pt.pt.update(inf_shk)
-        # with open(argv[1] + '\\new_qr.json', 'w') as jf:
-        #     i_pt.pt['care'] = ''
-        #     json.dump(i_pt.pt, jf)
-
-        print(i_pt.pt)
-        make_pdf_page(pdf_canvas, i_pt.pt)
+        print('перебираем наши ценники {0}'.format(price_tag))
+        logging.debug('перебираем наши ценники {0}'.format(price_tag))
+        if len(inf_shk) > 0:
+            key_shk = int(price_tag.get('nomnomer', 999999999999))
+            logging.debug('получили ключ ШК'.format(key_shk))
+            shk_dict = inf_shk.get(key_shk, {})
+            # обновляем словарь данных из сбис, данными с производства
+            price_tag.update(shk_dict)
+            # формируем pdf листик
+            logging.debug('собираемся формировать страничку pdf'.format())
+            make_pdf_page(pdf_canvas, price_tag)
+            logging.debug('закончили формировать pdf страничку')
+        else:
+            purchase_pdf(pdf_canvas, price_tag)
+            exit(purchase_print(argv[1] + '\\qr\\'))
     pdf_canvas.save()
-    # sendtoprinter(i_file=pdf_path)
+    sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
     os.startfile(pdf_path)
 
 
