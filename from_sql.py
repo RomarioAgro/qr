@@ -1,20 +1,3 @@
-# /****** Скрипт для команды SelectTopNRows из среды SSMS  ******/
-# SELECT TOP (1000) [max_iz]
-#       ,[kod_sh_gl]
-#       ,[gr_tov]
-#       ,[mod]
-#       ,[razm]
-#       ,[sost]
-#       ,[col_gl_txt]
-#       ,[name]
-#       ,[adres_sh]
-#       ,[uhod_image]
-#       ,[i_d_izgot]
-#       ,[gost]
-#       ,[sort]
-#       ,[iz_nakl_ushk]
-#   FROM [ACE].[dbo].[View_max_iz_kod_sh_ushk]
-#   WHERE kod_sh_gl='2910240421214'
 """
 скрипт получения из SQL сервера dbfsv
 данных для печати на ценниках, какие-то картинки
@@ -48,12 +31,15 @@ class Sql:
         """
         cursor = self.cnxn.cursor()
         inf_about_shk = dict()
+        if len(shk) == 1:
+            exec_string = f'SELECT max_iz, kod_sh_gl, gost, uhod_image, sost, i_d_izgot, sort, adres_sh, name, gr_tov, mod, razm, col_gl_txt, iz_nakl_ushk FROM ACE.dbo.View_max_iz_kod_sh_ushk where kod_sh_gl = {shk[0]}'
+        else:
+            exec_string = f'SELECT max_iz, kod_sh_gl, gost, uhod_image, sost, i_d_izgot, sort, adres_sh, name, gr_tov, mod, razm, col_gl_txt, iz_nakl_ushk FROM ACE.dbo.View_max_iz_kod_sh_ushk where kod_sh_gl in {shk}'
         try:
-            cursor.execute(f'SELECT max_iz, kod_sh_gl, gost, uhod_image, sost, i_d_izgot, sort, adres_sh, name, gr_tov, mod, razm, col_gl_txt, iz_nakl_ushk FROM ACE.dbo.View_max_iz_kod_sh_ushk where kod_sh_gl in {shk}')
+            cursor.execute(exec_string)
         except Exception as exc:
             print(exc)
             return inf_about_shk
-        shk_dict = dict()
         for row in cursor:
             inf_about_shk[int(row[1])] = {
                 'gost': row[2].strip(),
@@ -70,9 +56,6 @@ class Sql:
                 'iz_nakl_ushk': row[13],
                 'russia': 'Произведено в России'
             }
-            # inf_about_shk.append(shk_dict)
-            # shk_dict.clear()
-            # break
         return inf_about_shk
 
 
@@ -80,8 +63,6 @@ class Sql:
 
 def main():
     i_sql = Sql('ACE', server='192.168.2.234\DBF2008')
-    # i_sql.manual(shk='2910240421214')
-    # 2631490420023
     l_shk = ('2714996306135', '2714996535139', '2835383535195', '2951298140337', '2714997306134', '2714997421134')
     gost = i_sql.manual(shk=l_shk)
     print(gost)
