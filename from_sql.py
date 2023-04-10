@@ -22,18 +22,24 @@
 """
 import pyodbc
 from datetime import datetime
+from typing import List, Tuple
+from decouple import config
+
 
 
 class Sql:
     def __init__(self, database, server="XXVIR00012,55000"):
+        user_ace = config('ACE_user', None)
+        pass_ace = config('ACE_pass', None)
         self.cnxn = pyodbc.connect("Driver={SQL Server Native Client 11.0};"
-                                   "Server="+server+";"
-                                   "Database="+database+";"
-                                   "Trusted_Connection=yes;")
+                                   "Server=" + server + ";"
+                                   "Database=" + database + ";"
+                                   "UID=" + user_ace + ";"
+                                   "PWD=" + pass_ace + ";")
         self.query = "-- {}\n\n-- Made in Python".format(datetime.now()
                                                          .strftime("%d/%m/%Y"))
 
-    def manual(self, shk: str = '2631490420023'):
+    def manual(self, shk: Tuple = ('2631490420023',)):
         """
         2910240421214 - это закупной, он работать не должен
         2631490420023 - наш код, должен работать
@@ -41,17 +47,15 @@ class Sql:
         :return:
         """
         cursor = self.cnxn.cursor()
-        try:
-            cursor.execute(f'SELECT max_iz, kod_sh_gl, gost, uhod_image, sost, i_d_izgot, sort, adres_sh, name, gr_tov, mod, razm, col_gl_txt, iz_nakl_ushk FROM ACE.dbo.View_max_iz_kod_sh_ushk where kod_sh_gl = {shk}')
-        except Exception as exc:
-            gost: str = ''
-            i_image: str = ''
-            print(exc)
-            return gost, i_image
-        i_image: str = ''
         inf_about_shk = dict()
+        try:
+            cursor.execute(f'SELECT max_iz, kod_sh_gl, gost, uhod_image, sost, i_d_izgot, sort, adres_sh, name, gr_tov, mod, razm, col_gl_txt, iz_nakl_ushk FROM ACE.dbo.View_max_iz_kod_sh_ushk where kod_sh_gl in {shk}')
+        except Exception as exc:
+            print(exc)
+            return inf_about_shk
+        shk_dict = dict()
         for row in cursor:
-            inf_about_shk = {
+            inf_about_shk[int(row[1])] = {
                 'gost': row[2].strip(),
                 'care': row[3],
                 'sost': row[4].strip(),
@@ -66,7 +70,9 @@ class Sql:
                 'iz_nakl_ushk': row[13],
                 'russia': 'Произведено в России'
             }
-            break
+            # inf_about_shk.append(shk_dict)
+            # shk_dict.clear()
+            # break
         return inf_about_shk
 
 
@@ -76,7 +82,8 @@ def main():
     i_sql = Sql('ACE', server='192.168.2.234\DBF2008')
     # i_sql.manual(shk='2910240421214')
     # 2631490420023
-    gost = i_sql.manual(shk='2691743421122')
+    l_shk = ('2714996306135', '2714996535139', '2835383535195', '2951298140337', '2714997306134', '2714997421134')
+    gost = i_sql.manual(shk=l_shk)
     print(gost)
 
 if __name__ == '__main__':
