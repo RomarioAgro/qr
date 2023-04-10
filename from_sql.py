@@ -22,7 +22,7 @@ class Sql:
         self.query = "-- {}\n\n-- Made in Python".format(datetime.now()
                                                          .strftime("%d/%m/%Y"))
 
-    def manual(self, shk: Tuple = ('2631490420023',)):
+    def __call__(self, shk: Tuple = ('2631490420023',)):
         """
         2910240421214 - это закупной, он работать не должен
         2631490420023 - наш код, должен работать

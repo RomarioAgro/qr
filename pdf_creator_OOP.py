@@ -410,7 +410,7 @@ def main():
     logging.debug('получили наш кортеж ШК={0}'.format(shk_tuple))
     # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
     print('стучимся в sql')
-    inf_shk = data_from_dbfsv.manual(shk_tuple)
+    inf_shk = data_from_dbfsv(shk_tuple)
     for price_tag in all_pt.data['price_tag']:
         print('перебираем наши ценники {0}'.format(price_tag))
         logging.debug('перебираем наши ценники {0}'.format(price_tag))
