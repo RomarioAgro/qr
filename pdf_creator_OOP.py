@@ -149,8 +149,7 @@ def text_on_page_spit_by_word(canvs, vtext: str = '', vtext_font_size: int = 10,
     return ystart
 
 
-# def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_price: str = '000000',
-#                   shop: str = 'not shop', sale='00000'):
+
 def make_pdf_page(c, price_tag_dict: dict = {}):
     """
     функция создания объекта pdf страницы
@@ -397,7 +396,7 @@ def main():
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
     f_name = str(random.randint(1, 99999))
-    pdf_path = argv[1] + '\\qr\\' + f_name + ".pdf"
+    pdf_path = i_path + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
     logging.debug('создали объект pdf {0}'.format(pdf_canvas))
     # объект для запроса в sql
@@ -425,8 +424,11 @@ def main():
             make_pdf_page(pdf_canvas, price_tag)
             logging.debug('закончили формировать pdf страничку')
         else:
+            pdf_path = argv[1] + f_name + ".pdf"
+            pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
+            logging.debug('создали объект pdf {0}'.format(pdf_canvas))
             purchase_pdf(pdf_canvas, price_tag)
-            exit(purchase_print(argv[1] + '\\qr\\'))
+            exit(purchase_print(argv[1]))
     pdf_canvas.save()
     sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
     os.startfile(pdf_path)
