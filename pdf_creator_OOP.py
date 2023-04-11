@@ -13,13 +13,14 @@ from sys import argv, exit
 import os
 import win32print
 import win32api
-import time
 import random
 from pdfcreator_def import make_pdf_page as purchase_pdf
 from pdfcreator_def import sendtoprinter as purchase_print
 import logging
 import datetime
 import time
+import shutil
+import glob
 import json
 
 
@@ -37,6 +38,18 @@ logging.basicConfig(
 
 logging.debug('start')
 
+
+def move_pdf_in_folder(src_folder: str = 'd:\\files', dest_folder: str = 'd:\\files\\qr', ext_file: str = "*.pdf"):
+    """
+    функция очистки папки от использованых pdf
+    :param i_path_pdf: str путь до папки в котрой лежaт pdf
+    :return:
+    """
+    file_queue = [f for f in glob.glob(src_folder + ext_file) if os.path.isfile(f)]
+    if len(file_queue) > 0:
+        for i in file_queue:
+            d_file_path = os.path.join(dest_folder, os.path.basename(i))
+            shutil.move(i, d_file_path)
 
 def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (203 dpi)', paper_width: int = 600, paper_height: int = 400):
     """
@@ -428,7 +441,9 @@ def main():
             pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
             logging.debug('создали объект pdf {0}'.format(pdf_canvas))
             purchase_pdf(pdf_canvas, price_tag)
-            exit(purchase_print(argv[1]))
+            errorlevel = purchase_print(argv[1])
+            move_pdf_in_folder(src_folder=argv[1], dest_folder=i_path, ext_file="*.pdf")
+            exit(errorlevel)
     pdf_canvas.save()
     sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
     os.startfile(pdf_path)
