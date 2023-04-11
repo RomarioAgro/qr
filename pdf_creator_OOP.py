@@ -15,7 +15,6 @@ import win32print
 import win32api
 import random
 from pdfcreator_def import make_pdf_page as purchase_pdf
-from pdfcreator_def import sendtoprinter as purchase_print
 import logging
 import datetime
 import time
@@ -433,20 +432,17 @@ def main():
             # обновляем словарь данных из сбис, данными с производства
             price_tag.update(shk_dict)
             # формируем pdf листик
-            logging.debug('собираемся формировать страничку pdf'.format())
+            logging.debug('собственное производство собираемся формировать страничку pdf'.format())
             make_pdf_page(pdf_canvas, price_tag)
-            logging.debug('закончили формировать pdf страничку')
+            logging.debug('собственное производство закончили формировать pdf страничку')
         else:
-            pdf_path = argv[1] + f_name + ".pdf"
-            pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
-            logging.debug('создали объект pdf {0}'.format(pdf_canvas))
+            logging.debug('закупной товар создали объект pdf {0}'.format(pdf_canvas))
             purchase_pdf(pdf_canvas, price_tag)
-            errorlevel = purchase_print(argv[1])
-            move_pdf_in_folder(src_folder=argv[1], dest_folder=i_path, ext_file="*.pdf")
-            exit(errorlevel)
+            logging.debug('закупной товар закончили формировать pdf страничку')
     pdf_canvas.save()
     sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
     os.startfile(pdf_path)
+
 
 
 if __name__ == '__main__':

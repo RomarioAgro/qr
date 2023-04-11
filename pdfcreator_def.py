@@ -180,7 +180,8 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     c.setFont('Arial', qr_font_size)
     text_on_page(c, vtext=qr_data, vtext_font_size=qr_font_size, xstart=c_width - qr_width - pole,
                  ystart=qr_height - qr_font_size, xfinish=c_width - pole)
-    c.save()
+    c.showPage()
+    # c.save()
 
 
 widthPage = 6 * cm
