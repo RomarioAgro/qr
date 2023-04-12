@@ -423,22 +423,26 @@ def main():
     print('стучимся в sql')
     inf_shk = data_from_dbfsv(shk_tuple)
     for price_tag in all_pt.data['price_tag']:
-        print('перебираем наши ценники {0}'.format(price_tag))
-        logging.debug('перебираем наши ценники {0}'.format(price_tag))
-        if len(inf_shk) > 0:
-            key_shk = int(price_tag.get('nomnomer', 999999999999))
+        key_shk = int(price_tag.get('nomnomer', 999999999999))
+        if int(key_shk) != 999999999999:
+            print('перебираем наши ценники {0}'.format(price_tag))
+            logging.debug('перебираем наши ценники {0}'.format(price_tag))
+
             logging.debug('получили ключ ШК'.format(key_shk))
             shk_dict = inf_shk.get(key_shk, {})
-            # обновляем словарь данных из сбис, данными с производства
-            price_tag.update(shk_dict)
-            # формируем pdf листик
-            logging.debug('собственное производство собираемся формировать страничку pdf'.format())
-            make_pdf_page(pdf_canvas, price_tag)
-            logging.debug('собственное производство закончили формировать pdf страничку')
-        else:
-            logging.debug('закупной товар создали объект pdf {0}'.format(pdf_canvas))
-            purchase_pdf(pdf_canvas, price_tag)
-            logging.debug('закупной товар закончили формировать pdf страничку')
+            if len(shk_dict) > 0:
+                # обновляем словарь данных из сбис, данными с производства
+                price_tag.update(shk_dict)
+                # формируем pdf листик
+                print('формируем pdf листик нашего производства')
+                logging.debug('собственное производство собираемся формировать страничку pdf'.format())
+                make_pdf_page(pdf_canvas, price_tag)
+                logging.debug('собственное производство закончили формировать pdf страничку')
+            else:
+                logging.debug('закупной товар создали объект pdf {0}'.format(pdf_canvas))
+                print('формируем pdf листик закупной товар')
+                purchase_pdf(pdf_canvas, price_tag)
+                logging.debug('закупной товар закончили формировать pdf страничку')
     pdf_canvas.save()
     sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
     os.startfile(pdf_path)
