@@ -417,12 +417,12 @@ def main():
     data_from_dbfsv = Sql(db_name, server=db_server)
     logging.debug('создали объект sql {0}'.format(data_from_dbfsv))
     # получаем кортеж из наших ШК
-    shk_tuple = tuple(d.get('nomnomer', '9999999999999') for d in all_pt.data['price_tag'])
+    shk_tuple = tuple(d.get('nomnomer', '9999999999999') for d in all_pt.data)
     logging.debug('получили наш кортеж ШК={0}'.format(shk_tuple))
     # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
     print('стучимся в sql')
     inf_shk = data_from_dbfsv(shk_tuple)
-    for price_tag in all_pt.data['price_tag']:
+    for price_tag in all_pt.data:
         key_shk = int(price_tag.get('nomnomer', 999999999999))
         if int(key_shk) != 999999999999:
             print('перебираем наши ценники {0}'.format(price_tag))

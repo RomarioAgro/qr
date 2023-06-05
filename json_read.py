@@ -7,8 +7,8 @@ class ReadJSON:
     """
     def __init__(self, f_path: str = 'd:\\files\\', f_name: str = 'qr.json'):
         with open(f_path + '\\' + f_name) as json_file:
-            self.data = json.load(json_file)
-
+            temp_dict = json.load(json_file)
+        self.data = sorted(temp_dict['price_tag'], key=lambda x: x['name'])
 
 
 def main():

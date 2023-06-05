@@ -178,7 +178,7 @@ def main():
     # создаем объект pdf станицы
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
     logging.debug('создали объект pdf {0}'.format(pdf_canvas))
-    for price_tag in all_pt.data['price_tag']:
+    for price_tag in all_pt.data:
         print('перебираем наши ценники {0}'.format(price_tag))
         logging.debug('перебираем наши ценники {0}'.format(price_tag))
         # формируем pdf листик
