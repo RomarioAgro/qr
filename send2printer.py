@@ -3,31 +3,27 @@ import win32api
 from os.path import isfile
 import glob
 import time
+import win32con
 
-source_path = "d:\\python_work\\venv\\qr\\temp\\"
-# source_path = ""
+# Имя принтера
 
-def sendtoprinter():
-    old_printer = win32print.GetDefaultPrinter()
-    new_printer = win32print.SetDefaultPrinter('Honeywell PC42t plus (203 dpi)')
-    file_queue = [f for f in glob.glob("%s\\*.pdf" % source_path) if isfile(f)]
-    if len(file_queue) > 0:
-        for i in file_queue:
-            print_file(i, new_printer)
-            print(i)
-    time.sleep(5)
-    win32print.SetDefaultPrinter(old_printer)
+printer_name = 'Honeywell PC42t plus (203 dpi)'
+# Получаем объект принтера
+printer_handle = win32print.OpenPrinter(printer_name)
 
-def print_file(pfile, printer):
-    win32api.ShellExecute(
-        0,
-        "print",
-        '%s' % pfile,
-        '/d:"%s"' % printer,
-        ".",
-        0
-        )
+# Получаем текущие настройки принтера
+default_printer_properties = win32print.GetPrinter(printer_handle, 2)
 
+# Устанавливаем размер страницы
+default_printer_properties['pDevMode'].PaperWidth = 500  # Ширина страницы 60 мм
+default_printer_properties['pDevMode'].PaperLength = 500  # Высота страницы 40 мм
 
+# Устанавливаем ориентацию страницы (1 - портретная, 2 - ландшафтная)
+default_printer_properties['pDevMode'].Orientation = 1
 
-sendtoprinter()
+# Применяем настройки принтера
+win32print.SetPrinter(printer_handle, 2, default_printer_properties, 0)
+
+# Закрываем объект принтера
+win32print.ClosePrinter(printer_handle)
+
