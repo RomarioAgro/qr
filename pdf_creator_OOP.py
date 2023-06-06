@@ -6,15 +6,15 @@ from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from PIL import Image, ImageFilter
 import io
-from from_sql import Sql
 import qrcode
-from json_read import ReadJSON
-from sys import argv, exit
+from sys import argv
 import os
 import win32print
 import win32api
 import random
 from pdfcreator_def import make_pdf_page as purchase_pdf
+from from_sql import Sql
+from json_read import ReadJSON
 import logging
 import datetime
 import time
