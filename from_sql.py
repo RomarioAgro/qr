@@ -41,6 +41,7 @@ class Sql:
             print(exc)
             return inf_about_shk
         for row in cursor:
+            row = ['нет данных' if item is None else item for item in list(row)]
             inf_about_shk[int(row[1])] = {
                 'gost': row[2].strip(),
                 'care': row[3],
