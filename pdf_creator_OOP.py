@@ -58,6 +58,7 @@ def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (2
     # printer_name = 'Honeywell PC42t plus (203 dpi)'
     old_printer = win32print.GetDefaultPrinter()
     new_printer = win32print.SetDefaultPrinter(printer_name)
+    logging.debug(f'установили новый принтер по умолчанию {new_printer}')
     PRINTER_DEFAULTS = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
     printer_handle = win32print.OpenPrinter(printer_name, PRINTER_DEFAULTS)
     default_printer_properties = win32print.GetPrinter(printer_handle, 2)
@@ -66,10 +67,12 @@ def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (2
     default_printer_properties['pDevMode'].PaperLength = paper_height  # Высота страницы 40 мм
     # Применяем настройки принтера
     win32print.SetPrinter(printer_handle, 2, default_printer_properties, 0)
-
+    logging.debug(f'применили все настройки печати {default_printer_properties}')
     error_level = print_file(i_file, new_printer)
+    logging.debug(f'отправили на печать наш файл')
     time.sleep(5)
     win32print.SetDefaultPrinter(old_printer)
+    logging.debug(f'вернули старый принтер по усолчанию {old_printer}')
     return error_level
 
 def print_file(pfile, printer):
@@ -422,6 +425,7 @@ def main():
     # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
     print('стучимся в sql')
     inf_shk = data_from_dbfsv(shk_tuple)
+    inf_shk = {}
     for price_tag in all_pt.data:
         key_shk = int(price_tag.get('nomnomer', 999999999999))
         if int(key_shk) != 999999999999:
@@ -444,7 +448,9 @@ def main():
                 purchase_pdf(pdf_canvas, price_tag)
                 logging.debug('закупной товар закончили формировать pdf страничку')
     pdf_canvas.save()
-    sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
+    logging.debug('pdf сохранен, сейчас будем печатать')
+    error_level = sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
+    logging.debug(f'результат печати {error_level}')
     os.startfile(pdf_path)
 
 
