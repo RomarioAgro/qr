@@ -7,7 +7,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from PIL import Image, ImageFilter
 import io
 import qrcode
-from sys import argv
+from sys import argv, exit
 import os
 import win32print
 import win32api
@@ -20,7 +20,8 @@ import datetime
 import time
 import shutil
 import glob
-import json
+import ctypes
+
 
 
 
@@ -60,7 +61,13 @@ def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (2
     new_printer = win32print.SetDefaultPrinter(printer_name)
     logging.debug(f'установили новый принтер по умолчанию {new_printer}')
     PRINTER_DEFAULTS = {"DesiredAccess": win32print.PRINTER_ALL_ACCESS}
-    printer_handle = win32print.OpenPrinter(printer_name, PRINTER_DEFAULTS)
+    try:
+        printer_handle = win32print.OpenPrinter(printer_name, PRINTER_DEFAULTS)
+    except Exception as exc:
+        text_error = 'ошибка открытия принтера'
+        logging.debug(f' {text_error} {exc}')
+        ctypes.windll.user32.MessageBoxW(0, text_error, 'Ошибка', 0x10)
+        exit(2000)
     default_printer_properties = win32print.GetPrinter(printer_handle, 2)
     # Устанавливаем размер страницы
     default_printer_properties['pDevMode'].PaperWidth = paper_width  # Ширина страницы 60 мм
