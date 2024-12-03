@@ -432,7 +432,6 @@ def main():
     # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
     print('стучимся в sql')
     inf_shk = data_from_dbfsv(shk_tuple)
-    inf_shk = {}
     for price_tag in all_pt.data:
         key_shk = int(price_tag.get('nomnomer', 999999999999))
         if int(key_shk) != 999999999999:
