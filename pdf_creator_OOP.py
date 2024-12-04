@@ -300,9 +300,9 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         care = Image.open(io.BytesIO(price_tag_dict.get('care', None)))
     except Exception as exc:
         care = None
-        logging.debug('получить изображение нихуя не вышло')
-        print(exc)
-    # care = Image.open('1.bmp')
+        logging.debug(f'артикул {price_tag_dict.get("name", None)} получить изображение нихуя не вышло {exc}')
+        ctypes.windll.user32.MessageBoxW(0, "ошибка получения изображения ухода\nпечать невозможна\nсмотри лог", 'Ошибка', 0x10)
+        exit(1)
     if care:
         logging.debug('зашли в обработку изображения')
         hcare = vtext_font_size * 1.5
