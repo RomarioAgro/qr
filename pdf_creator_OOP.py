@@ -4,6 +4,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
+import PyPDF2
 from PIL import Image, ImageFilter
 import io
 import qrcode
@@ -410,11 +411,40 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     c.showPage()
 
 
+def print_pdf_in_chunks(pdf_path, chunk_size=10):
+    # Читаем исходный PDF
+    with open(pdf_path, "rb") as pdf_file:
+        pdf_reader = PyPDF2.PdfReader(pdf_file)
+        total_pages = len(pdf_reader.pages)
+        print(f"Всего страниц в PDF: {total_pages}")
+
+        # Разбиваем на части и отправляем на печать
+        for start_page in range(0, total_pages, chunk_size):
+            end_page = min(start_page + chunk_size, total_pages)
+            temp_pdf_path = f"temp_chunk_{start_page + 1}_to_{end_page}.pdf"
+
+            # Создаём новый PDF с частью страниц
+            pdf_writer = PyPDF2.PdfWriter()
+            for page_num in range(start_page, end_page):
+                pdf_writer.add_page(pdf_reader.pages[page_num])
+
+            with open(temp_pdf_path, "wb") as temp_pdf:
+                pdf_writer.write(temp_pdf)
+            try:
+                sendtoprinter(i_file=temp_pdf_path)
+                print(f"Печатаем страницы с {start_page + 1} по {end_page}")
+            except Exception as e:
+                print(f"Ошибка при печати: {e}")
+            finally:
+                # Удаляем временный файл
+                os.remove(temp_pdf_path)
+
 def main():
     print('hello')
     all_pt = ReadJSON(argv[1], argv[2])
     logging.debug('прочитали весь json {0}'.format(all_pt))
     i_path = argv[1] + '\\qr\\'
+    os.chdir(i_path)
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
     f_name = str(random.randint(1, 99999))
@@ -455,11 +485,13 @@ def main():
                 logging.debug('закупной товар закончили формировать pdf страничку')
     pdf_canvas.save()
     logging.debug('pdf сохранен, сейчас будем печатать')
-    error_level = sendtoprinter(i_file=pdf_path, paper_width=600, paper_height=400)
+    error_level = print_pdf_in_chunks(pdf_path, 30)
     logging.debug(f'результат печати {error_level}')
     os.startfile(pdf_path)
 
 
 
 if __name__ == '__main__':
+    # pdf_path = "d:\\files\\qr\\38047.pdf"
+    # error_level = print_pdf_in_chunks(pdf_path, 50)
     main()
