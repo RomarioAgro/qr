@@ -29,6 +29,7 @@ import ctypes
 widthPage = 57 * mm
 heightPage = 40 * mm
 
+
 current_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H_%M_%S')
 logging.basicConfig(
     filename=argv[1] + '\\' + argv[2] + "_" + current_time + '_.log',
@@ -52,7 +53,7 @@ def move_pdf_in_folder(src_folder: str = 'd:\\files', dest_folder: str = 'd:\\fi
             d_file_path = os.path.join(dest_folder, os.path.basename(i))
             shutil.move(i, d_file_path)
 
-def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (203 dpi)', paper_width: int = 600, paper_height: int = 400):
+def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (203 dpi)'):
     """
     функция отправки на печать pdf файлов из папки
     :return:
@@ -70,9 +71,6 @@ def sendtoprinter(i_file: str = '', printer_name: str = 'Honeywell PC42t plus (2
         ctypes.windll.user32.MessageBoxW(0, text_error, 'Ошибка', 0x10)
         exit(2000)
     default_printer_properties = win32print.GetPrinter(printer_handle, 2)
-    # Устанавливаем размер страницы
-    default_printer_properties['pDevMode'].PaperWidth = paper_width  # Ширина страницы 60 мм
-    default_printer_properties['pDevMode'].PaperLength = paper_height  # Высота страницы 40 мм
     # Применяем настройки принтера
     win32print.SetPrinter(printer_handle, 2, default_printer_properties, 0)
     logging.debug(f'применили все настройки печати {default_printer_properties}')
@@ -438,15 +436,16 @@ def print_pdf_in_chunks(pdf_path, chunk_size=10):
             finally:
                 # Удаляем временный файл
                 os.remove(temp_pdf_path)
+                time.sleep(10)
 
 def main():
     print('hello')
     all_pt = ReadJSON(argv[1], argv[2])
     logging.debug('прочитали весь json {0}'.format(all_pt))
     i_path = argv[1] + '\\qr\\'
-    os.chdir(i_path)
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
+    os.chdir(i_path)
     f_name = str(random.randint(1, 99999))
     pdf_path = i_path + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
