@@ -3,10 +3,11 @@ import json
 import os
 
 from reportlab.pdfgen import canvas
+from reportlab.graphics.barcode import createBarcodeDrawing
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import cm, mm
-import qrcode
 import win32print
 import win32api
 from os.path import isfile
@@ -15,6 +16,12 @@ import glob
 import time
 from sys import exit
 import uuid
+import sys
+module_path = "d:\\kassa\\script_py\\shtrih"
+if module_path not in sys.path:
+    sys.path.append(module_path)
+from preparation_km_to_honest_sign import preparation_km
+
 
 
 def del_pdf_in_folder(i_path_pdf):
@@ -85,8 +92,6 @@ def text_on_page(canvs, vtext: str = '', vtext_font_size: int = 10, xstart: int 
     :param xfinish: int финишная координата X
     :return: int финишная координата Y, на какой высоте остановились
     """
-    from reportlab.pdfbase.pdfmetrics import stringWidth
-
     # xstart, ystart start coordinates our text string
     vtext_result = ''
     for char in vtext:
@@ -110,9 +115,6 @@ def text_on_page(canvs, vtext: str = '', vtext_font_size: int = 10, xstart: int 
             canvs.line(xstart, cross_out_y, xstart + stringWidth(vtext_result, 'Arial', vtext_font_size), cross_out_y)
     return ystart
 
-
-# def make_pdf_page(c, qr_data: str = '99999', vtext: str = 'zaglushka', vtext_price: str = '000000',
-#                   shop: str = 'not shop', sale='00000'):
 def make_pdf_page(c, price_tag_dict: dict = {}):
     """
     функция создания объекта pdf страницы
@@ -131,14 +133,26 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     c_height = c.__dict__['_pagesize'][1]
     vtext_font_size = 10
     c.setFont('Arial', vtext_font_size)
-    qr_width = qr_height = c_width // 3
-    pole = 4 * mm
+    qr_width = qr_height = c_height // 1.7
+    pole = c_height // 20
     # image qr-code
     qr_data = price_tag_dict.get('qr', '')
     if qr_data != '':
-        c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width - pole, c_height - qr_height, width=qr_width,
-                          height=qr_height)
-    c.rect(c_width - qr_width - pole, c_height - qr_height, qr_width, qr_height, fill=0)
+        qr_data = preparation_km(qr_data)
+        barcode = createBarcodeDrawing("DataMatrix", value=qr_data, xdim=1)
+        desired_size = qr_height  # Желаемый размер в пикселях
+        current_height = barcode.height
+        scale_factor = desired_size / current_height
+        c.saveState()
+        c.translate(c_width - qr_width - pole, c_height - qr_height - pole * 0.5)  # Координаты вставки
+        c.scale(scale_factor, scale_factor)  # Масштабирование
+        barcode.drawOn(c, x=0, y=0)
+        c.restoreState()
+    c.rect(c_width - qr_width - pole * 1.4,
+           c_height - qr_height - pole * 0.8,
+           qr_width + pole * 0.8,
+           qr_height + pole * 0.65,
+           fill=0)
     # image qr-code
     ytext = c_height - vtext_font_size * 1.5
     # image name of vendor code
@@ -147,41 +161,38 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
                          xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # image name of vendor code
     # image sale
-    sale = price_tag_dict.get('sale', '0')
-    price_font_size = 16
-    ytext = 4 * mm
-    if float(sale) != 0:
-        c.setFont('Arial', price_font_size)
-        # ytext = ytext - price_font_size * 3
-        xs = pole - 2 * mm
-        text_on_page(c, vtext=sale + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
-                     xfinish=c_width, cross_out=cross_out)
-    # image sale
+    sale = price_tag_dict.get('sale', None)
+    if sale:
+        price_font_size = 16
+        ytext = 4 * mm
+        if float(sale) != 0:
+            c.setFont('Arial', price_font_size)
+            # ytext = ytext - price_font_size * 3
+            xs = pole - 2 * mm
+            text_on_page(c, vtext=sale + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
+                         xfinish=c_width, cross_out=cross_out)
+        # image sale
     # image price
     vtext_price = price_tag_dict.get('price', None)
-    if float(sale) != 0:
-        # price_font_size = 20
-        cross_out = True
-    c.setFont('Arial', price_font_size)
-    xs = 29 * mm
-    text_on_page(c, vtext=vtext_price + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
-                 xfinish=c_width, cross_out=cross_out)
+    if vtext_price:
+        if float(sale) != 0:
+            # price_font_size = 20
+            cross_out = True
+        c.setFont('Arial', price_font_size)
+        xs = 29 * mm
+        text_on_page(c, vtext=vtext_price + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
+                     xfinish=c_width, cross_out=cross_out)
     # image price
-    # image name of shop
-    # shop больше не печатаем
-    # vtext_shop = 'Цена за 1 шт усл. ' + shop
-    # shop_font_size = 6
-    # c.setFont('ArialBold', shop_font_size)
-    # # image name of shop
-    # text_on_page(c, vtext=vtext_shop, vtext_font_size=shop_font_size, xstart=shop_font_size, ystart=shop_font_size * 2,
-    #              xfinish=c_width - (qr_width + 20))
     # текст qr кода
     qr_font_size = 6
     c.setFont('Arial', qr_font_size)
-    text_on_page(c, vtext=qr_data, vtext_font_size=qr_font_size, xstart=c_width - qr_width - pole,
-                 ystart=qr_height - qr_font_size, xfinish=c_width - pole)
+    text_on_page(c,
+                 vtext=qr_data[0:31],
+                 vtext_font_size=qr_font_size,
+                 xstart=c_width - qr_width - pole * 1.4,
+                 ystart=c_height - qr_height - pole * 0.8 - qr_font_size * 1.2,
+                 xfinish=c_width - pole)
     c.showPage()
-    # c.save()
 
 
 widthPage = 6 * cm

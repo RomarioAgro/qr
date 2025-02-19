@@ -3,16 +3,16 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
+from reportlab.graphics.barcode import createBarcodeDrawing
 from reportlab.pdfbase.pdfmetrics import stringWidth
 import PyPDF2
 from PIL import Image, ImageFilter
 import io
 import qrcode
-from sys import argv, exit
+from sys import argv, exit, path
 import os
 import win32print
 import win32api
-import random
 from pdfcreator_def import make_pdf_page as purchase_pdf
 from from_sql import Sql
 from json_read import ReadJSON
@@ -22,6 +22,12 @@ import time
 import shutil
 import glob
 import ctypes
+# import sys
+module_path = "d:\\kassa\\script_py\\shtrih"
+if module_path not in path:
+    path.append(module_path)
+from preparation_km_to_honest_sign import preparation_km
+
 
 
 
@@ -194,13 +200,20 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     vtext_font_size = c_height // 10
     c.setFont('ArialBold', vtext_font_size)
     qr_width = qr_height = c_height // 2.5
-    pole = 1
+    pole = c_height // 20
     # image qr-code
     qr_data = price_tag_dict.get('qr', None)
     if qr_data:
-        c.drawInlineImage(qrcode.make(qr_data), c_width - qr_width, c_height - qr_height, width=qr_width,
-                          height=qr_height)
-    c.rect(c_width - qr_width, c_height - qr_height, qr_width, qr_height, fill=0)
+        qr_data = preparation_km(qr_data)
+        barcode = createBarcodeDrawing("DataMatrix", value=qr_data, xdim=1)
+        desired_size = qr_height  # Желаемый размер в пикселях
+        current_height = barcode.height
+        scale_factor = desired_size / current_height
+        c.saveState()
+        c.translate(c_width - qr_width - pole, c_height - qr_height - pole * 0.5)  # Координаты вставки
+        c.scale(scale_factor, scale_factor)  # Масштабирование
+        barcode.drawOn(c, x=0, y=0)
+        c.restoreState()
     # image qr-code
     # rectangle replacement_part
     replacement_part_x = 35 * mm
@@ -213,8 +226,8 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # text qr кода
     vtext_font_size = c_height // 20
     c.setFont('ArialBold', vtext_font_size)
-    text_on_page_split_by_char(c, vtext=qr_data, vtext_font_size=vtext_font_size, xstart=c_width // 2.6 + qr_width,
-                 ystart=c_height - qr_height - vtext_font_size, xfinish=c_width - pole * mm)
+    text_on_page_split_by_char(c, vtext=qr_data[:31], vtext_font_size=vtext_font_size, xstart=c_width // 2.6 + qr_width,
+                 ystart=c_height - qr_height - vtext_font_size - pole // 2, xfinish=c_width)
     # text qr кода
     # text product group
     vtext = price_tag_dict.get('gr_tov', None)
@@ -222,7 +235,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     if vtext:
         ytext = c_height - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # text product group
     # text model
@@ -232,7 +245,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext = 'Арт: ' + vtext
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # text model
     # text size
@@ -242,7 +255,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext = 'Размер: ' + vtext
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # text size
     # text color
@@ -252,7 +265,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext = 'Цвет: ' + vtext.strip()
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=cross_out)
     # text color
     # image structure
@@ -262,7 +275,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 17
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + pole), cross_out=False)
     # image structure
     # image russia
@@ -271,7 +284,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 20
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image russia
     # image manufacturer
@@ -281,7 +294,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         ytext = ytext - vtext_font_size
         vtext = 'Производитель: ' + vtext
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - qr_width, cross_out=False)
     # image manufacturer
     # image adres_shp
@@ -290,7 +303,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 20
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image adres_shp
     # image care
@@ -314,7 +327,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         # прогоняем через фильтр расширение, делаем пиксель черным если у него есть 1 черный сосед
         for _ in range(2):
             care_black_and_white = care_black_and_white.filter(ImageFilter.MinFilter(3))
-        c.drawInlineImage(care_black_and_white, 0, ycare, width=c_width // 2.5, height=hcare)
+        c.drawInlineImage(care_black_and_white, pole, ycare, width=c_width // 2.5, height=hcare)
     # image care
     # image make date
     vtext = price_tag_dict.get('make_date', None)
@@ -323,7 +336,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 20
         ytext = ycare - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image make date
     # image GOST
@@ -333,7 +346,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 15
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=0, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image GOST
     try:
@@ -347,14 +360,14 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     if eac:
         logging.debug('зашли в печать EAC'.format())
         weac = heac = c_height // 4.5
-        c.drawInlineImage(eac, 0, 0, width=weac, height=heac)
+        c.drawInlineImage(eac, pole, 0, width=weac, height=heac)
     # image sort
     vtext = price_tag_dict.get('sort', None)
     if vtext:
         vtext_font_size = c_height // 20
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=weac, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=weac + pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image sort
     # image iz_nakl_ushk i don't know that this, but requires guidance
@@ -363,7 +376,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         vtext_font_size = c_height // 25
         ytext = ytext - vtext_font_size
         c.setFont('ArialBold', vtext_font_size)
-        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=weac, ystart=ytext,
+        ytext = text_on_page_split_by_char(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=weac + pole, ystart=ytext,
                              xfinish=c_width - (qr_width + 20 + pole), cross_out=False)
     # image iz_nakl_ushk i don't know that this, but requires guidance
     # image sale
@@ -446,7 +459,7 @@ def main():
     if os.path.exists(i_path) is False:
         os.makedirs(i_path)
     os.chdir(i_path)
-    f_name = str(random.randint(1, 99999))
+    f_name = str(int(time.time()))
     pdf_path = i_path + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
     logging.debug('создали объект pdf {0}'.format(pdf_canvas))
