@@ -5,16 +5,12 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.units import mm
 from reportlab.graphics.barcode import createBarcodeDrawing
 from reportlab.pdfbase.pdfmetrics import stringWidth
-import PyPDF2
 from PIL import Image, ImageFilter
 import io
-import qrcode
 from sys import argv, exit, path
 import os
-import win32print
-import win32api
 from pdfcreator_def import make_pdf_page as purchase_pdf
-from from_sql import Sql
+from from_sql import update_our_data_from_sql
 from json_read import ReadJSON
 import logging
 import datetime
@@ -22,7 +18,6 @@ import time
 import shutil
 import glob
 import ctypes
-# import sys
 from sendtoprinter import print_pdf_in_chunks
 module_path = "d:\\kassa\\script_py\\shtrih"
 if module_path not in path:
@@ -129,7 +124,6 @@ def text_on_page_spit_by_word(canvs, vtext: str = '', vtext_font_size: int = 10,
         if cross_out:
             canvs.line(xstart, ystart, xstart + stringWidth(vtext_result, 'Arial', vtext_font_size), ystart + vtext_font_size)
     return ystart
-
 
 
 def make_pdf_page(c, price_tag_dict: dict = {}):
@@ -389,17 +383,8 @@ def main():
     pdf_path = i_path + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
     logging.debug('создали объект pdf {0}'.format(pdf_canvas))
-    # объект для запроса в sql
-    db_name = config('database', None)
-    db_server = config('ACE_server', None)
-    data_from_dbfsv = Sql(db_name, server=db_server)
-    logging.debug('создали объект sql {0}'.format(data_from_dbfsv))
-    # получаем кортеж из наших ШК
     shk_tuple = tuple(d.get('nomnomer', '9999999999999') for d in all_pt.data)
-    logging.debug('получили наш кортеж ШК={0}'.format(shk_tuple))
-    # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
-    print('стучимся в sql')
-    inf_shk = data_from_dbfsv(shk_tuple)
+    inf_shk = update_our_data_from_sql(shk_tuple=shk_tuple)
     for price_tag in all_pt.data:
         key_shk = int(price_tag.get('nomnomer', 999999999999))
         if int(key_shk) != 999999999999:
