@@ -143,7 +143,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         font_size = 14
         font_name = 'ArialBold'
         ytext = print_artikul_name(c, vtext=razmer, pole=pole, ystart=ytext, xfinish=c_width - pole, font_size=font_size, font_name=font_name)
-    sostav = price_tag_dict.get('sost', None)
+    sostav = price_tag_dict.get('sostav', None)
     if sostav:
         xs = stringWidth(razmer, font_name, font_size) + pole
         font_size = 9
