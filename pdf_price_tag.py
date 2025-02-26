@@ -15,6 +15,7 @@ import time
 from typing import Dict
 from sendtoprinter import print_pdf_in_chunks
 from text_on_pdf import text_on_page_spit_by_word, text_on_page_split_by_char
+from from_sql import update_our_data_from_sql
 
 
 
@@ -93,6 +94,23 @@ def print_sale_price(c,
     return ytext
 
 
+def print_prihod_measure(c,
+                 nakl: str = 'unknown',
+                 pole: float = 2.0):
+    font_size = 6
+    font = 'Arial'
+    c.setFont(font, font_size)
+    xs = pole
+    ytext = 0 + font_size + pole
+    text_on_page_spit_by_word(c, vtext=nakl, vtext_font_size=font_size, xstart=xs, ystart=ytext,
+                              xfinish=c.__dict__['_pagesize'][0], cross_out=False)
+    vtext = 'цена за 1 шт.'
+    xs = c.__dict__['_pagesize'][0] - pole * 2 - stringWidth(vtext, font, font_size)
+    ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=font_size, xstart=xs, ystart=ytext,
+                                      xfinish=c.__dict__['_pagesize'][0], cross_out=False)
+    return ytext
+
+
 def make_pdf_page(c, price_tag_dict: dict = {}):
     """
     функция создания объекта pdf страницы
@@ -112,14 +130,30 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     c_height = c.__dict__['_pagesize'][1]
     pole = c_height // 20
     # печать названия артикула
-    art_name = price_tag_dict.get('mod', None)
-    ytext = print_artikul_name(c, vtext=art_name, pole=pole, ystart=c_height, xfinish=c_width - pole, font_size=8, font_name='ArialBold')
+    art_name = price_tag_dict.get('mod', 'model')
+    ytext = print_artikul_name(c, vtext=art_name, pole=pole, ystart=c_height, xfinish=c_width - pole,
+                               font_size=8, font_name='ArialBold')
+    color = price_tag_dict.get('col_gl_txt', 'color')
+    ytext = print_artikul_name(c, vtext=color, pole=pole, ystart=ytext, xfinish=c_width - pole, font_size=8,
+                               font_name='ArialBold')
     # печать названия артикула
-
     # печать размера
-    razmer = 'Размер ' + price_tag_dict.get('razm', None)
+    razmer = 'разм.' + price_tag_dict.get('razm', None)
     if razmer:
-        ytext = print_artikul_name(c, vtext=razmer, pole=pole, ystart=ytext, xfinish=c_width - pole, font_size=14, font_name='ArialBold')
+        font_size = 14
+        font_name = 'ArialBold'
+        ytext = print_artikul_name(c, vtext=razmer, pole=pole, ystart=ytext, xfinish=c_width - pole, font_size=font_size, font_name=font_name)
+    sostav = price_tag_dict.get('sost', None)
+    if sostav:
+        xs = stringWidth(razmer, font_name, font_size) + pole
+        font_size = 9
+        c.setFont('Arial', font_size)
+        ytext = text_on_page_split_by_char(c,
+                                           vtext=sostav,
+                                           vtext_font_size=font_size,
+                                           xstart=xs,
+                                           ystart=ytext,
+                                           xfinish=c_width - pole)
 
     # печать распродажи
     sale = price_tag_dict.get('sale', '0.0')
@@ -155,7 +189,6 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
                                  font_name='ArialBold',
                                  cross_out=False,
                                  price_only=True)
-    a = int(price_tag_dict.get('defective', 0))
     if int(price_tag_dict.get('defective', 0)) == 1:
         font_size = 19
         c.setFont('Arial', font_size)
@@ -163,34 +196,37 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         xs = pole * 2
         ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=font_size, xstart=xs, ystart=ytext,
                                           xfinish=c_width, cross_out=False)
-    vtext = 'цена за 1 шт.'
-    vtext_font_size = 6
-    c.setFont('Arial', vtext_font_size)
-    xs = c_width - stringWidth(vtext, 'Arial', vtext_font_size) - pole * 2
-    ytext = 0 + vtext_font_size + pole
-    ytext = text_on_page_spit_by_word(c, vtext=vtext, vtext_font_size=vtext_font_size, xstart=xs, ystart=ytext,
-                 xfinish=c_width, cross_out=False)
-
+    # печать номера накладной и меры количества за которую ценник
+    print_prihod_measure(c, nakl=price_tag_dict.get('prihod', 'unknown'), pole=pole)
     c.showPage()
 
-def get_model_color_size(name: str = 'CLE C680к Трусы жен.спорт|чсрный(13я061)|M') -> Dict:
+def get_model_color_size(name: str = 'CLE C680к Трусы жен.спорт|чсрный(13я061)|M',
+                         col_gl_txt: str = 'nocolor',
+                         sostav: str = 'nothing',
+                         razm: str = 'norazmer') -> Dict:
     """
     получаем модель, цвет, размер из
     строки названия артикула
     :return:
     """
-    data = {
-        'mod': 'model',  # имя
-        'col_gl_txt': 'color',  # цвет
-        'razm': 'size'  # размер
-    }
     parts = name.split('|')
-    if len(parts) > 2:
+    if name and col_gl_txt and sostav and razm:
         data = {
+            'name': parts[0],
             'mod': parts[0],  # имя
-            'col_gl_txt': parts[1],  # цвет
-            'razm': parts[2]  # размер
+            'sostav': sostav,  #состав
+            'col_gl_txt': col_gl_txt,  # цвет
+            'razm': razm # размер
         }
+    else:
+        if len(parts) > 2:
+            data = {
+                'name': parts[0],
+                'mod': parts[0],  # имя
+                'col_gl_txt': parts[1],  # цвет
+                'sostav': '',
+                'razm': parts[2]  # размер
+            }
     return data
 
 def main():
@@ -205,8 +241,17 @@ def main():
     pdf_path = i_path + f_name + ".pdf"
     pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
     logging.debug('создали объект pdf')
+    # получаем данные из sql
+    shk_tuple = tuple(d.get('nomnomer', '9999999999999') for d in all_pt.data)
+    inf_shk = update_our_data_from_sql(shk_tuple=shk_tuple)
+    # получаем данные из sql
     for price_tag in all_pt.data:
-        price_tag.update(get_model_color_size(name=price_tag.get('name', '')))
+        key_shk = int(price_tag.get('nomnomer', 999999999999))
+        shk_dict = inf_shk.get(key_shk, {})
+        price_tag.update(get_model_color_size(name=price_tag.get('name', ''),
+                                              col_gl_txt=shk_dict.get('col_gl_txt', None),
+                                              sostav=shk_dict.get('sost', None),
+                                              razm=shk_dict.get('razm', None)))
         print('перебираем наши ценники {0}'.format(price_tag))
         logging.debug('перебираем наши ценники {0}'.format(price_tag))
         make_pdf_page(pdf_canvas, price_tag)
