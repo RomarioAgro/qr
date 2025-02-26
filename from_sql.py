@@ -7,6 +7,7 @@ import pyodbc
 from datetime import datetime
 from typing import List, Tuple
 from decouple import config
+import logging
 
 
 
@@ -59,13 +60,29 @@ class Sql:
             }
         return inf_about_shk
 
-
+def update_our_data_from_sql(shk_tuple: Tuple = ()):
+    """
+    получаем данный из SQL, заходим с кортежем ШК
+    выходим со списком словарей допданных если они есть
+    :param shk_tuple:
+    :return:
+    """
+    db_name = config('database', None)
+    db_server = config('ACE_server', None)
+    data_from_dbfsv = Sql(db_name, server=db_server)
+    logging.debug('создали объект sql {0}'.format(data_from_dbfsv))
+    # получаем кортеж из наших ШК
+    logging.debug('получили наш кортеж ШК={0}'.format(shk_tuple))
+    # с этим кортежем стучимся в sql, в ответ получаем словарь, ключи - шк, а значения словари с данными о товаре с производства
+    print('стучимся в sql')
+    inf_shk = data_from_dbfsv(shk_tuple)
+    return inf_shk
 
 
 def main():
     i_sql = Sql('ACE', server='192.168.2.234\DBF2008')
-    l_shk = ('2714996306135', '2714996535139', '2835383535195', '2951298140337', '2714997306134', '2714997421134')
-    gost = i_sql.manual(shk=l_shk)
+    l_shk = ('2288423523032',)
+    gost = i_sql(shk=l_shk)
     print(gost)
 
 if __name__ == '__main__':
