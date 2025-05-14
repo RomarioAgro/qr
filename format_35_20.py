@@ -2,7 +2,8 @@ from decouple import config
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.units import mm
+# from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import landscape, mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from json_read import ReadJSON
 from sys import argv, exit
@@ -13,11 +14,14 @@ import random
 import logging
 import datetime
 import time
-from pdf_creator_OOP import sendtoprinter, print_file
+from sendtoprinter import sendtoprinter
 
 
-widthPage = 35 * mm
-heightPage = 20 * mm
+widthPage = 35
+heightPage = 20
+widthPage_mm = widthPage * mm
+heightPage_mm = heightPage * mm
+
 
 current_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H_%M_%S')
 logging.basicConfig(
@@ -121,21 +125,21 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     pdfmetrics.registerFont(TTFont('ArialBold', 'arialbd.ttf'))
     c_width = c.__dict__['_pagesize'][0]
     c_height = c.__dict__['_pagesize'][1]
-    pole = 1
+    pole = 1 * mm
     # image sale
     sale = price_tag_dict.get('sale', None)
-    price_font_size = 16
-    ytext = c_height - price_font_size
+    price_font_size = 4
+    ytext = c_height - price_font_size - 1
+    # image sale
     if sale:
         if float(sale) > 0.0:
             c.setFont('Arial', price_font_size)
-            # ytext = ytext - price_font_size * 3
+            # ytext = ytext - price_font_size * 2
             text_sale = sale + 'р.'
             xs = c_width - c_width + (c_width - stringWidth(text_sale, 'Arial', price_font_size)) // 2
             ytext = text_on_page_split_by_char(c, vtext=text_sale, vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                          xfinish=c_width, cross_out=cross_out)
             cross_out = True
-    # image sale
     # image price
     vtext_price = price_tag_dict.get('price', None)
     if vtext_price:
@@ -145,9 +149,11 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         ytext = ytext - price_font_size
         ytext = text_on_page_split_by_char(c, vtext=vtext_price, vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                      xfinish=c_width, cross_out=cross_out)
+    # image price
+
     vtext = 'цена за 1 шт.'
     if vtext_price:
-        vtext_font_size = c_height // 25
+        vtext_font_size = 2
         c.setFont('Arial', vtext_font_size)
         xs = c_width - c_width + (c_width - stringWidth(vtext, 'Arial', vtext_font_size)) // 2
         ytext = ytext - vtext_font_size
@@ -156,7 +162,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     name = price_tag_dict.get('name', None)
     # text under price
     if name:
-        vtext_font_size = 7
+        vtext_font_size = 3
         c.setFont('Arial', vtext_font_size)
         xs = c_width - c_width + pole
         ytext = ytext - vtext_font_size
@@ -167,7 +173,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
 
 def main():
     print('hello')
-    # читаем json  с данными ценника
+    # читаем json с данными ценника
     all_pt = ReadJSON(argv[1], argv[2])
     logging.debug('прочитали весь json {0}'.format(all_pt))
     i_path = argv[1] + '\\qr\\'
@@ -176,7 +182,7 @@ def main():
     f_name = str(random.randint(1, 99999))
     pdf_path = argv[1] + '\\qr\\' + f_name + ".pdf"
     # создаем объект pdf станицы
-    pdf_canvas = canvas.Canvas(pdf_path, pagesize=(widthPage, heightPage))
+    pdf_canvas = canvas.Canvas(pdf_path, pagesize=landscape((widthPage, heightPage)))
     logging.debug('создали объект pdf {0}'.format(pdf_canvas))
     for price_tag in all_pt.data:
         print('перебираем наши ценники {0}'.format(price_tag))
@@ -186,8 +192,9 @@ def main():
         make_pdf_page(pdf_canvas, price_tag)
         logging.debug('закончили формировать pdf страничку')
     pdf_canvas.save()
-
-    sendtoprinter(i_file=pdf_path, paper_width=350, paper_height=200)
+    sendtoprinter(i_file=pdf_path,
+                  paper_width=widthPage_mm,
+                  paper_height=heightPage_mm)
     os.startfile(pdf_path)
 
 
