@@ -2,8 +2,8 @@ from decouple import config
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-# from reportlab.lib.units import mm
-from reportlab.lib.pagesizes import landscape, mm
+from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import landscape
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from json_read import ReadJSON
 from sys import argv, exit
