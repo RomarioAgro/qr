@@ -133,7 +133,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     c_height = c.__dict__['_pagesize'][1]
     vtext_font_size = 10
     c.setFont('Arial', vtext_font_size)
-    qr_width = qr_height = c_height // 1.7
+    qr_width = qr_height = c_height // 2
     pole = c_height // 20
     # image qr-code
     qr_data = price_tag_dict.get('qr', '')
@@ -168,7 +168,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         if float(sale) != 0:
             c.setFont('Arial', price_font_size)
             # ytext = ytext - price_font_size * 3
-            xs = pole - 2 * mm
+            xs = 4 * mm
             text_on_page(c, vtext=sale + 'р.', vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                          xfinish=c_width, cross_out=cross_out)
         # image sale
