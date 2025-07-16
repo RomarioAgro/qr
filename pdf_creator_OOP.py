@@ -22,6 +22,9 @@ from sendtoprinter import print_pdf_in_chunks
 module_path = "d:\\kassa\\script_py\\shtrih"
 if module_path not in path:
     path.append(module_path)
+module_path = "d:\\kassa\\script_py\\shtrih\\honest_sign"
+if module_path not in path:
+    path.append(module_path)
 from preparation_km_to_honest_sign import preparation_km
 
 
@@ -55,8 +58,14 @@ def move_pdf_in_folder(src_folder: str = 'd:\\files', dest_folder: str = 'd:\\fi
             d_file_path = os.path.join(dest_folder, os.path.basename(i))
             shutil.move(i, d_file_path)
 
-def text_on_page_split_by_char(canvs, vtext: str = '', vtext_font_size: int = 10, xstart: int = 0, ystart: int = 0,
-                 xfinish: int = 170, cross_out:bool = False) -> int:
+def text_on_page_split_by_char(canvs,
+                               vtext: str = '',
+                               vtext_font_size: int = 10,
+                               xstart: int = 0,
+                               ystart: int = 0,
+                               xfinish: int = 170,
+                               cross_out:bool = False
+                               ) -> int:
     """
     функция размещения текста на нашем объекте pdf
     :param canvs: obj сам объект pdf
@@ -149,7 +158,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     vtext_font_size = c_height // 10
     c.setFont('ArialBold', vtext_font_size)
     qr_width = qr_height = c_height // 2.5
-    pole = c_height // 20
+    pole = 1 * mm
     # image qr-code
     qr_data = price_tag_dict.get('qr', None)
     if qr_data:
@@ -167,6 +176,9 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     # rectangle replacement_part
     replacement_part_x = 35 * mm
     replacement_part_y = 20 * mm
+    replacement_part_x = 60 * mm
+    replacement_part_y = 40 * mm
+
     c.setDash(2, 2)
     c.rect(c_width - replacement_part_x, 0, replacement_part_x, replacement_part_y, fill=0)
     c.setDash(1, 0)
@@ -347,7 +359,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     if vtext_price:
         vtext_price = vtext_price + 'р.'
         c.setFont('Arial', price_font_size)
-        xs = c_width - replacement_part_x + (replacement_part_x - stringWidth(vtext_price, 'Arial', price_font_size)) // 2
+        xs = 20
         ytext = ytext - price_font_size
         ytext = text_on_page_split_by_char(c, vtext=vtext_price, vtext_font_size=price_font_size, xstart=xs, ystart=ytext,
                      xfinish=c_width, cross_out=cross_out)
@@ -408,8 +420,8 @@ def main():
                 logging.debug('закупной товар закончили формировать pdf страничку')
     pdf_canvas.save()
     logging.debug('pdf сохранен, сейчас будем печатать')
-    error_level = print_pdf_in_chunks(pdf_path, 30)
-    logging.debug(f'результат печати {error_level}')
+    # error_level = print_pdf_in_chunks(pdf_path, 30)
+    # logging.debug(f'результат печати {error_level}')
     os.startfile(pdf_path)
 
 
