@@ -257,8 +257,8 @@ def main():
         make_pdf_page(pdf_canvas, price_tag)
     pdf_canvas.save()
     logging.debug('pdf сохранен, сейчас будем печатать')
-    error_level = print_pdf_in_chunks(pdf_path, 30)
-    logging.debug(f'результат печати {error_level}')
+    # error_level = print_pdf_in_chunks(pdf_path, 30)
+    # logging.debug(f'результат печати {error_level}')
     os.startfile(pdf_path)
 
 
