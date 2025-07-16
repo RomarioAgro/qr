@@ -8,8 +8,8 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 from json_read import ReadJSON
 from sys import argv, exit
 import os
-import win32print
-import win32api
+# import win32print
+# import win32api
 import random
 import logging
 import datetime
@@ -192,9 +192,9 @@ def main():
         make_pdf_page(pdf_canvas, price_tag)
         logging.debug('закончили формировать pdf страничку')
     pdf_canvas.save()
-    sendtoprinter(i_file=pdf_path,
-                  paper_width=widthPage_mm,
-                  paper_height=heightPage_mm)
+    # sendtoprinter(i_file=pdf_path,
+    #               paper_width=widthPage_mm,
+    #               paper_height=heightPage_mm)
     os.startfile(pdf_path)
 
 
