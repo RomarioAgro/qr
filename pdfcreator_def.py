@@ -214,8 +214,8 @@ def main():
             # make_pdf_page(pdf_canvas, qr_data=pt['qr'], vtext=pt['name'],
             #               vtext_price=pt['price'], shop=pt['shop'], sale=pt['sale'])
             make_pdf_page(pdf_canvas, pt)
-
-    return sendtoprinter(work_dir=i_path)
+    os.startfile(i_path)
+    # return sendtoprinter(work_dir=i_path)
 
 
 # 170.0787401574803
