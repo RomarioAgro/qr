@@ -131,7 +131,7 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
     pdfmetrics.registerFont(TTFont('ArialBold', 'arialbd.ttf'))
     c_width = c.__dict__['_pagesize'][0]
     c_height = c.__dict__['_pagesize'][1]
-    qr_width = qr_height = c_height // 1.5
+    qr_width = qr_height = c_height // 1.8
     pole = c_height // 20
     # image qr-code
     qr_data = price_tag_dict.get('qr', None)
