@@ -142,15 +142,17 @@ def make_pdf_page(c, price_tag_dict: dict = {}):
         current_height = barcode.height
         scale_factor = desired_size / current_height
         c.saveState()
-        c.translate(c_width - qr_width - pole, c_height - qr_height - pole * 0.5)  # Координаты вставки
+        y_qr = c_height - qr_height - pole
+        c.translate(c_width - qr_width - pole, y_qr)  # Координаты вставки
         c.scale(scale_factor, scale_factor)  # Масштабирование
         barcode.drawOn(c, x=0, y=0)
         c.restoreState()
     # image qr-code
     #рамка вокруг qr-code
     ramka_x = c_width - qr_width - pole * 1.4 ##координата Х с которой начинается рамка QR кода
+    ramka_y = y_qr - pole * 0.3 ##координата Y с которой начинается рамка QR кода
     c.rect(ramka_x,
-           c_height - qr_height - pole * 0.8,
+           ramka_y,
            qr_width + pole * 0.8,
            qr_height + pole * 0.65,
            fill=0)
